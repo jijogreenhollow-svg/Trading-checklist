@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gainers & Losers Checklist</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#14181f;--muted:#667085;--line:#e3e6eb;--accent:#16a34a;--long:#16a34a;--short:#dc2626;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--text:#e8ebf0;--muted:#8a93a3;--line:#262c36;--accent:#22c55e;--long:#22c55e;--short:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--text:#e8ebf0;--muted:#8a93a3;--line:#262c36;--accent:#22c55e;--long:#22c55e;--short:#f87171;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0 10px;z-index:5}
+.prog{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.prog>div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.stat{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:6px}
+.dir{display:flex;gap:8px;margin:10px 0}
+.dir button,.tools button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-weight:600;cursor:pointer}
+.dir button.on.l{background:var(--long);color:#fff;border-color:var(--long)}
+.dir button.on.s{background:var(--short);color:#fff;border-color:var(--short)}
+.sec{margin:18px 0 6px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.item{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;user-select:none}
+.item input{width:22px;height:22px;margin-top:1px;accent-color:var(--accent);flex:none}
+.item .n{color:var(--muted);font-weight:600;min-width:1.4em}
+.item.done{opacity:.6}
+.item.done .t{text-decoration:line-through}
+.item b{display:block}
+.tools{display:flex;gap:8px;margin:16px 0}
+.verdict{margin-top:6px;padding:12px;border-radius:12px;font-weight:600;text-align:center;background:var(--card);border:1px solid var(--line)}
+.verdict.ok{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gainers &amp; Losers Checklist</h1>
+  <p class="sub">Run through every rule before and during a trade.</p>
+
+  <div class="bar">
+    <div class="prog"><div id="pb"></div></div>
+    <div class="stat"><span id="cnt">0 / 15</span><span id="pct">0%</span></div>
+  </div>
+
+  <div class="dir">
+    <button class="l" id="bl">LONG</button>
+    <button class="s" id="bs">SHORT</button>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="tools"><button id="reset">Reset checklist</button></div>
+  <div class="verdict" id="verdict">Complete all checks before entering.</div>
+</div>
+
+<script>
+const sections=[
+["Entry setup",[
+"Take the first and second coins from each Gainers and Losers tab.",
+"Check how long the coin holds its position. If it starts stepping back, recheck the setup.",
+"Check the 1W chart for enough room for a pump or dump, then choose LONG or SHORT.",
+"Align with the overall market direction. Don't trade against it without strong confirmation.",
+"Check for major economic news that could move the market rapidly.",
+"Avoid chasing: don't enter just because of a huge move or after the major pump/dump already happened.",
+"Check liquidity: identify major liquidity zones and don't enter directly into them."]],
+["Risk &amp; management",[
+"Keep SL and Half TP active. Trail the remaining position toward the weekly high or low.",
+"Check the coin is still in the Gainers or Losers tab to confirm the trend.",
+"Check pending limit orders and remove them when the setup is no longer valid.",
+"At 200% profit, secure 25% of the profit and move SL to entry.",
+"If not moving into positive PNL, trend is against the plan and big liquidity lies ahead, exit manually."]],
+["Discipline",[
+"Trade only with an amount you can afford to lose.",
+"Never force a trade.",
+"Capital protection first: consistent execution over maximizing every trade."]]
+];
+const total=15;
+let state={checks:Array(total).fill(false),dir:null};
+try{const s=JSON.parse(localStorage.getItem("gl-checklist")||"null");if(s&&s.checks&&s.checks.length===total)state=s}catch(e){}
+function save(){try{localStorage.setItem("gl-checklist",JSON.stringify(state))}catch(e){}}
+const list=document.getElementById("list");
+let idx=0;
+sections.forEach(([title,items])=>{
+  const h=document.createElement("div");h.className="sec";h.innerHTML=title;list.appendChild(h);
+  items.forEach(txt=>{
+    const i=idx++;
+    const el=document.createElement("label");el.className="item";el.dataset.i=i;
+    el.innerHTML='<input type="checkbox"><span class="n">'+(i+1)+'.</span><span class="t">'+txt+'</span>';
+    el.querySelector("input").addEventListener("change",e=>{state.checks[i]=e.target.checked;save();render()});
+    list.appendChild(el);
+  });
+});
+function render(){
+  const n=state.checks.filter(Boolean).length,p=Math.round(n/total*100);
+  document.querySelectorAll(".item").forEach(el=>{
+    const i=+el.dataset.i;el.querySelector("input").checked=state.checks[i];el.classList.toggle("done",state.checks[i]);
+  });
+  document.getElementById("pb").style.width=p+"%";
+  document.getElementById("cnt").textContent=n+" / "+total;
+  document.getElementById("pct").textContent=p+"%";
+  document.getElementById("bl").classList.toggle("on",state.dir==="L");document.getElementById("bl").classList.toggle("l",true);
+  document.getElementById("bs").classList.toggle("on",state.dir==="S");
+  const v=document.getElementById("verdict");
+  if(n===total){v.className="verdict ok";v.textContent="All checks done"+(state.dir?" — "+(state.dir==="L"?"LONG":"SHORT")+" setup valid":"")+". Trade only if it still feels clean."}
+  else{v.className="verdict";v.textContent=(total-n)+" check"+(total-n>1?"s":"")+" remaining. Don't force a trade."}
+}
+document.getElementById("bl").onclick=()=>{state.dir=state.dir==="L"?null:"L";save();render()};
+document.getElementById("bs").onclick=()=>{state.dir=state.dir==="S"?null:"S";save();render()};
+document.getElementById("reset").onclick=()=>{state={checks:Array(total).fill(false),dir:null};save();render()};
+render();
+</script>
+</body>
+</html>
